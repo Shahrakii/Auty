@@ -1,0 +1,189 @@
+@extends('layouts.app')
+
+@section('page-title', '{{ MODEL_PLURAL }}')
+@section('page-subtitle', 'Manage all {{ MODEL_LOWER_PLURAL }}')
+
+@section('content')
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-white mb-2">{{ MODEL_PLURAL }}</h1>
+            <p class="text-gray-400">Total: <span class="font-semibold text-blue-400">{{ ${{ MODEL_PLURAL_CAMEL }}->total() }}</span></p>
+        </div>
+        <a href="{{ route('{{ MODEL_PLURAL_SNAKE }}.create') }}" class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl">
+            <i class="fas fa-plus"></i>
+            Create New
+        </a>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-gray-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-900/50 border-b border-gray-700">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">ID</th>
+                        {{ COLUMN_HEADERS }}
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Created</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700">
+                    @forelse(${{ MODEL_PLURAL_CAMEL }} as ${{ MODEL_LOWER }})
+                        <tr class="hover:bg-gray-700/50 transition-colors">
+                            <!-- ID -->
+                            <td class="px-6 py-4 text-sm text-gray-400 font-mono">#{{ ${{ MODEL_LOWER }}->id }}</td>
+
+                            <!-- Dynamic Columns with Relationship Support -->
+                            @foreach($columns as $column)
+                                <td class="px-6 py-4 text-sm text-gray-300">
+                                    @php
+                                        $fieldName = $column['name'];
+                                        $isImage = in_array($fieldName, ['image', 'photo', 'featured_image', 'avatar', 'thumbnail', 'cover', 'banner', 'logo', 'icon', 'picture', 'profile_image']);
+                                        $isForeignKey = str_ends_with($fieldName, '_id');
+                                    @endphp
+                                    
+                                    @if($isImage && ${{ MODEL_LOWER }}->{$fieldName})
+                                        <img 
+                                            src="{{ asset('storage/' . ${{ MODEL_LOWER }}->{$fieldName}) }}" 
+                                            alt="{{ $fieldName }}"
+                                            class="h-12 w-12 object-cover rounded-lg border border-gray-600 hover:scale-110 transition-transform cursor-pointer"
+                                            onclick="window.open('{{ asset('storage/' . ${{ MODEL_LOWER }}->{$fieldName}) }}', '_blank')"
+                                        >
+                                    @elseif($isImage)
+                                        <div class="h-12 w-12 bg-gray-700 rounded-lg border border-gray-600 flex items-center justify-center">
+                                            <i class="fas fa-image text-gray-500"></i>
+                                        </div>
+                                    @elseif($isForeignKey)
+                                        @php
+                                            $relationshipMethod = str_replace('_id', '', $fieldName);
+                                            $relationshipModel = ${{ MODEL_LOWER }}->{$relationshipMethod};
+                                        @endphp
+                                        @if($relationshipModel)
+                                            <span class="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full font-medium">
+                                                <i class="fas fa-link"></i>
+                                                {{ $relationshipModel->name ?? $relationshipModel->title ?? $relationshipModel->id }}
+                                            </span>
+                                        @else
+                                            <span class="text-gray-500 italic">Not assigned</span>
+                                        @endif
+                                    @elseif(str_contains($fieldName, 'content') || str_contains($fieldName, 'description') || str_contains($fieldName, 'text'))
+                                        <div class="text-gray-300 line-clamp-2 max-w-xs">
+                                            {{ Str::limit(${{ MODEL_LOWER }}->{$fieldName}, 60) }}
+                                        </div>
+                                    @elseif($fieldName === 'published' || $fieldName === 'active')
+                                        @if(${{ MODEL_LOWER }}->{$fieldName})
+                                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-300 text-xs rounded-full font-medium">
+                                                <i class="fas fa-check-circle"></i>
+                                                Published
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-600/50 text-gray-400 text-xs rounded-full font-medium">
+                                                <i class="fas fa-circle"></i>
+                                                Draft
+                                            </span>
+                                        @endif
+                                    @else
+                                        {{ ${{ MODEL_LOWER }}->{$fieldName} ?? '-' }}
+                                    @endif
+                                </td>
+                            @endforeach
+
+                            <!-- Created Date -->
+                            <td class="px-6 py-4 text-sm text-gray-400">
+                                <span class="text-xs">{{ ${{ MODEL_LOWER }}->created_at->format('M d, Y') }}</span>
+                                <div class="text-xs text-gray-500">{{ ${{ MODEL_LOWER }}->created_at->diffForHumans() }}</div>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="px-6 py-4 text-sm space-x-2 flex items-center">
+                                <a href="{{ route('{{ MODEL_PLURAL_SNAKE }}.show', ${{ MODEL_LOWER }}) }}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all text-xs font-medium">
+                                    <i class="fas fa-eye text-xs"></i>
+                                    View
+                                </a>
+                                <a href="{{ route('{{ MODEL_PLURAL_SNAKE }}.edit', ${{ MODEL_LOWER }}) }}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all text-xs font-medium">
+                                    <i class="fas fa-edit text-xs"></i>
+                                    Edit
+                                </a>
+                                <form action="{{ route('{{ MODEL_PLURAL_SNAKE }}.destroy', ${{ MODEL_LOWER }}) }}" method="POST" class="inline delete-form">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all text-xs font-medium delete-btn">
+                                        <i class="fas fa-trash text-xs"></i>
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="100" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center gap-3">
+                                    <i class="fas fa-inbox text-4xl text-gray-600"></i>
+                                    <p class="text-gray-400 font-medium">No {{ MODEL_LOWER_PLURAL }} found</p>
+                                    <a href="{{ route('{{ MODEL_PLURAL_SNAKE }}.create') }}" class="text-blue-400 text-sm hover:text-blue-300">
+                                        Create your first one →
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    @if(${{ MODEL_PLURAL_CAMEL }}->hasPages())
+        <div class="mt-8 flex justify-center">
+            {{ ${{ MODEL_PLURAL_CAMEL }}->links() }}
+        </div>
+    @endif
+</div>
+
+<!-- SweetAlert2 for Delete -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = this.closest('.delete-form');
+            
+            Swal.fire({
+                title: 'Delete {{ MODEL_LOWER }}?',
+                text: 'This action cannot be undone.',
+                icon: 'warning',
+                iconColor: '#ef4444',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+                background: '#1f2937',
+                color: '#f3f4f6',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: '{{ MODEL_LOWER }} has been deleted.',
+                        icon: 'success',
+                        iconColor: '#10b981',
+                        background: '#1f2937',
+                        color: '#f3f4f6',
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                    
+                    setTimeout(() => {
+                        form.submit();
+                    }, 500);
+                }
+            });
+        });
+    });
+});
+</script>
+@endsection

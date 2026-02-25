@@ -1,0 +1,121 @@
+@extends('layouts.app')
+
+@section('page-title', '{{ MODEL }} Details')
+@section('page-subtitle', 'Complete information')
+
+@section('content')
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white">{{ ${{ MODEL_LOWER }}->title ?? ${{ MODEL_LOWER }}->name ?? '#' . ${{ MODEL_LOWER }}->id }}</h1>
+            <p class="text-gray-400 mt-2">
+                Created {{ ${{ MODEL_LOWER }}->created_at->diffForHumans() }}
+                @if(${{ MODEL_LOWER }}->updated_at->ne(${{ MODEL_LOWER }}->created_at))
+                    • Updated {{ ${{ MODEL_LOWER }}->updated_at->diffForHumans() }}
+                @endif
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ route('{{ MODEL_PLURAL_SNAKE }}.edit', ${{ MODEL_LOWER }}) }}" class="flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-all">
+                <i class="fas fa-edit"></i>
+                Edit
+            </a>
+            <a href="{{ route('{{ MODEL_PLURAL_SNAKE }}.index') }}" class="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-all">
+                <i class="fas fa-arrow-left"></i>
+                Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            {{ DISPLAY_FIELDS }}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Info Card -->
+            <div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-info-circle text-blue-400"></i>
+                    Information
+                </h3>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <p class="text-gray-400 text-xs uppercase tracking-wide">ID</p>
+                        <p class="text-gray-100 font-mono">{{ ${{ MODEL_LOWER }}->id }}</p>
+                    </div>
+                    <hr class="border-gray-700">
+                    <div>
+                        <p class="text-gray-400 text-xs uppercase tracking-wide">Created</p>
+                        <p class="text-gray-100">{{ ${{ MODEL_LOWER }}->created_at->format('M d, Y H:i') }}</p>
+                    </div>
+                    <hr class="border-gray-700">
+                    <div>
+                        <p class="text-gray-400 text-xs uppercase tracking-wide">Updated</p>
+                        <p class="text-gray-100">{{ ${{ MODEL_LOWER }}->updated_at->format('M d, Y H:i') }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Card -->
+            <div class="bg-red-900/20 rounded-xl border border-red-700/50 p-6">
+                <h3 class="text-lg font-bold text-red-400 mb-3 flex items-center gap-2">
+                    <i class="fas fa-trash"></i>
+                    Danger Zone
+                </h3>
+                <form action="{{ route('{{ MODEL_PLURAL_SNAKE }}.destroy', ${{ MODEL_LOWER }}) }}" method="POST" class="delete-form">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button" class="w-full delete-btn px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all">
+                        <i class="fas fa-trash-alt"></i>
+                        Delete {{ MODEL_LOWER }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('.delete-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        const form = this.closest('.delete-form');
+        
+        Swal.fire({
+            title: 'Delete {{ MODEL_LOWER }}?',
+            text: 'This action cannot be undone. All related data may be affected.',
+            icon: 'warning',
+            iconColor: '#ef4444',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            background: '#1f2937',
+            color: '#f3f4f6',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Deleted!',
+                    icon: 'success',
+                    iconColor: '#10b981',
+                    background: '#1f2937',
+                    color: '#f3f4f6',
+                    timer: 1500
+                });
+                
+                setTimeout(() => form.submit(), 500);
+            }
+        });
+    });
+});
+</script>
+@endsection

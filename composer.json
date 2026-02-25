@@ -1,0 +1,44 @@
+{
+  "name": "shahrakii/crudly",
+  "description": "Automatic, intelligent CRUD generator for Laravel. Generate controllers, models, migrations, and views in seconds.",
+  "keywords": [
+    "laravel",
+    "crud",
+    "generator",
+    "scaffold",
+    "automation",
+    "artisan"
+  ],
+  "homepage": "https://github.com/Shahrakii/Crudly",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Shahryar",
+      "email": "shahrak.woop@example.com"
+    }
+  ],
+  "require": {
+    "php": "^8.2",
+    "illuminate/console": "^12.0",
+    "illuminate/database": "^12.0",
+    "illuminate/filesystem": "^12.0",
+    "illuminate/support": "^12.0"
+  },
+  "require-dev": {
+    "laravel/framework": "^12.0",
+    "orchestra/testbench": "^9.0",
+    "phpunit/phpunit": "^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Shahrakii\\Crudly\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Shahrakii\\Crudly\\CrudlyServiceProvider"
+      ]
+    }
+  }
+}

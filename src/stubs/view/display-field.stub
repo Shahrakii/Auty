@@ -1,0 +1,7 @@
+<div class="space-y-1 p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+        <i class="fas fa-info-circle"></i>
+        {{ FIELD_LABEL }}
+    </p>
+    <p class="text-lg text-gray-100 font-medium">{{ ${{ MODEL_LOWER }}->{{ FIELD_NAME }} ?? 'N/A' }}</p>
+</div>

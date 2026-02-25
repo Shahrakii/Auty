@@ -1,0 +1,143 @@
+<div class="space-y-3">
+    <label class="block text-sm font-semibold text-gray-300">
+        {{ FIELD_LABEL }} <span class="text-red-400">*</span>
+    </label>
+    
+    <div class="grid grid-cols-2 gap-4">
+        <!-- LEFT: Preview -->
+        <div class="flex flex-col items-center justify-center">
+            <div id="{{ FIELD_NAME }}_container" class="w-full aspect-square bg-gray-700 rounded-lg border-2 border-gray-600 flex items-center justify-center overflow-hidden relative">
+                @if(isset(${{ MODEL_LOWER }}) && ${{ MODEL_LOWER }}->{{ FIELD_NAME }})
+                    <img 
+                        id="{{ FIELD_NAME }}_preview"
+                        src="{{ asset('storage/' . ${{ MODEL_LOWER }}->{{ FIELD_NAME }}) }}" 
+                        alt="Preview"
+                        class="w-full h-full object-cover"
+                    >
+                @else
+                    <div id="{{ FIELD_NAME }}_placeholder" class="text-center">
+                        <i class="fas fa-image text-4xl text-gray-500 mb-2"></i>
+                        <p class="text-gray-400 text-sm">No image</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- RIGHT: Upload Form -->
+        <div class="flex flex-col justify-center space-y-3">
+            <div class="relative">
+                <input 
+                    type="file"
+                    id="{{ FIELD_NAME }}"
+                    name="{{ FIELD_NAME }}"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    class="hidden"
+                    onchange="previewImage(this, '{{ FIELD_NAME }}')"
+                >
+                <label 
+                    for="{{ FIELD_NAME }}"
+                    class="block w-full px-4 py-3 bg-gray-700 border-2 border-dashed border-gray-600 rounded-lg text-white text-center cursor-pointer hover:bg-gray-600 hover:border-blue-500 transition-all"
+                >
+                    <div class="flex flex-col items-center gap-2">
+                        <i class="fas fa-cloud-upload-alt text-xl"></i>
+                        <span class="text-sm font-medium">Click to upload</span>
+                        <span class="text-xs text-gray-400">or drag & drop</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="text-xs text-gray-400 space-y-1">
+                <p class="flex items-center gap-2">
+                    <i class="fas fa-check-circle text-green-500"></i>
+                    <span>JPG, PNG, GIF, WebP</span>
+                </p>
+                <p class="flex items-center gap-2">
+                    <i class="fas fa-check-circle text-green-500"></i>
+                    <span>Max 2MB</span>
+                </p>
+            </div>
+
+            @error('{{ FIELD_NAME }}')
+                <p class="text-red-400 text-xs flex items-center gap-1 p-2 bg-red-500/10 rounded">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ $message }}
+                </p>
+            @enderror
+        </div>
+    </div>
+</div>
+
+<script>
+function previewImage(input, fieldName) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const container = document.getElementById(fieldName + '_container');
+        const placeholder = document.getElementById(fieldName + '_placeholder');
+        
+        // Remove placeholder if exists
+        if (placeholder) {
+            placeholder.remove();
+        }
+        
+        // Check if preview img already exists
+        let preview = document.getElementById(fieldName + '_preview');
+        
+        if (preview) {
+            // Update existing image
+            preview.src = e.target.result;
+        } else {
+            // Create new image
+            const img = document.createElement('img');
+            img.id = fieldName + '_preview';
+            img.src = e.target.result;
+            img.className = 'w-full h-full object-cover';
+            img.alt = 'Preview';
+            container.appendChild(img);
+        }
+    };
+    
+    reader.readAsDataURL(file);
+}
+
+// Drag and drop
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('input[type="file"]');
+    
+    inputs.forEach(fileInput => {
+        const label = fileInput.nextElementSibling;
+        if (!label) return;
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            label.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            label.addEventListener(eventName, () => {
+                label.classList.add('border-blue-500', 'bg-blue-500/10');
+            }, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            label.addEventListener(eventName, () => {
+                label.classList.remove('border-blue-500', 'bg-blue-500/10');
+            }, false);
+        });
+        
+        label.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            fileInput.files = files;
+            
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+        }, false);
+    });
+});
+</script>

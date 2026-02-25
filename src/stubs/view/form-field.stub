@@ -1,0 +1,20 @@
+<div class="space-y-2">
+    <label for="{{ FIELD_NAME }}" class="block text-sm font-semibold text-gray-300">
+        {{ FIELD_LABEL }} <span class="text-red-400">*</span>
+    </label>
+    <input 
+        type="{{ FIELD_TYPE }}"
+        id="{{ FIELD_NAME }}"
+        name="{{ FIELD_NAME }}"
+        value="{{ old('{{ FIELD_NAME }}', ${{ MODEL_LOWER }}->{{ FIELD_NAME }} ?? '') }}"
+        class="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition @error('{{ FIELD_NAME }}') border-red-500 @enderror"
+        placeholder="Enter {{ FIELD_LABEL_LOWER }}"
+        {{ FIELD_REQUIRED }}
+    >
+    @error('{{ FIELD_NAME }}')
+        <p class="text-red-400 text-xs flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ $message }}
+        </p>
+    @enderror
+</div>

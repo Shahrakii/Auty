@@ -1,0 +1,25 @@
+@extends('layouts.app')
+
+@section('page-title', 'Create {{ MODEL }}')
+@section('page-subtitle', 'Add new {{ MODEL_LOWER }}')
+
+@section('content')
+<div class="p-6 max-w-2xl">
+    <form action="{{ route('{{ MODEL_PLURAL_SNAKE }}.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+        @csrf
+
+        {{ FORM_FIELDS }}
+
+        <div class="flex gap-3 pt-6 border-t border-gray-700">
+            <button type="submit" class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl">
+                <i class="fas fa-check"></i>
+                Create
+            </button>
+            <a href="{{ route('{{ MODEL_PLURAL_SNAKE }}.index') }}" class="flex-1 flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-100 px-6 py-3 rounded-lg font-medium transition-all">
+                <i class="fas fa-times"></i>
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+@endsection

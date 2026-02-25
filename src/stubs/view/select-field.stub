@@ -1,0 +1,27 @@
+<div class="space-y-2">
+    <label for="{{ FIELD_NAME }}" class="block text-sm font-semibold text-gray-300">
+        {{ FIELD_LABEL }} <span class="text-red-400">*</span>
+    </label>
+    <select 
+        id="{{ FIELD_NAME }}"
+        name="{{ FIELD_NAME }}"
+        class="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition @error('{{ FIELD_NAME }}') border-red-500 @enderror"
+        required
+    >
+        <option value="">-- Select {{ FIELD_LABEL }} --</option>
+        @foreach(\App\Models\{{ RELATIONSHIP_MODEL }}::all() as $item)
+            <option 
+                value="{{ $item->id }}"
+                @if(isset(${{ MODEL_LOWER }}) && ${{ MODEL_LOWER }}->{{ FIELD_NAME }} == $item->id) selected @endif
+            >
+                {{ $item->name ?? $item->title ?? $item->id }}
+            </option>
+        @endforeach
+    </select>
+    @error('{{ FIELD_NAME }}')
+        <p class="text-red-400 text-xs flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ $message }}
+        </p>
+    @enderror
+</div>
