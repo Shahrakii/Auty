@@ -1,951 +1,497 @@
-# 📋 Crudly - Laravel CRUD Generator
+# ⚡ Auty — Advanced Admin Auth & Authorization for Laravel
 
-**Crudly** is a powerful Laravel package that automatically generates complete CRUD (Create, Read, Update, Delete) operations with beautiful dark-themed views, custom models, and controllers. Built with Laravel 12+ compatibility and Tailwind CSS.
+[![Laravel](https://img.shields.io/badge/Laravel-10%2B%20%7C%2011%2B-red?logo=laravel)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.1%2B-blue?logo=php)](https://php.net)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
----
-
-## ✨ Features
-
-✅ One-Command CRUD Generation  
-✅ Dark Theme UI with Tailwind CSS  
-✅ Smart Schema Detection  
-✅ Implicit Model Binding  
-✅ Auto Validation Rules  
-✅ Customizable Stubs  
-✅ Responsive Tables  
-✅ Built-in Column Filtering  
-✅ Smart Form Generation  
-✅ Auto Routes Registration  
-✅ Professional Admin Layout  
+**Auty** is a production-ready, fully-featured admin authentication and authorization package for Laravel 10+. It ships with a completely separate guard, role/permission system, OTP, 2FA, impersonation, session management, activity logging, and a clean built-in UI — all in one package.
 
 ---
 
-## 📦 Requirements
+## ✨ Features at a Glance
 
-- PHP 8.2+
-- Laravel 12.0+
-- Composer
-- Tailwind CSS
+| Feature | Details |
+|---|---|
+| **Separate Admin Guard** | Completely isolated from the default `user` guard |
+| **Role System** | `super_admin` & `admin` roles with permission-based access control |
+| **OTP Auth** | Email / SMS one-time codes with pluggable providers |
+| **2FA (TOTP)** | Google Authenticator compatible via `pragmarx/google2fa` |
+| **Impersonation** | Super admins can view-as any admin with full audit trail |
+| **Session Management** | Per-admin session tracking, revocation, suspicious login detection |
+| **Activity Logs** | Every action logged with IP, user agent, method, URL |
+| **Brute-Force Protection** | Rate limiting + account lock after failed attempts |
+| **Admin Panel UI** | Dashboard, admin CRUD, role/permission editor, logs viewer |
+| **API Token Auth** | Laravel Sanctum-powered API token support |
+| **Multi-Tenancy** | Optional tenant_id scoping |
+| **Localization** | All strings translatable via lang files |
+| **Events & Listeners** | Extensible via standard Laravel events |
+| **Artisan Commands** | `auty:install`, `auty:create-admin`, `auty:assign-role` |
 
 ---
 
 ## 🚀 Installation
 
-### Step 1: Install Package
+### 1. Require via Composer
 
 ```bash
-composer require shahrakii/crudly:@dev
+composer require auty/auty
 ```
 
-### Step 2: Publish Configuration
+### 2. Run the installer
 
 ```bash
-php artisan vendor:publish --provider="Shahrakii\Crudly\CrudlyServiceProvider"
+php artisan auty:install
 ```
 
-This creates `config/crudly.php`
-
-### Step 3: Verify Installation
-
-```bash
-php artisan list crudly
-```
-
-You should see:
-```
-crudly:generate     Generate complete CRUD operations for a model
-crudly:model        Generate a model with fillable properties
-crudly:controller   Generate a CRUD controller for a model
-```
+This will:
+- Publish config → `config/auty.php`
+- Publish migrations, views, lang files
+- Run migrations
+- Seed default roles & permissions
+- Create your first Super Admin interactively
 
 ---
 
 ## ⚙️ Configuration
 
-Edit `config/crudly.php`:
+After installation, customize `config/auty.php`:
 
 ```php
-return [
-    'route_prefix' => env('CRUDLY_ROUTE_PREFIX', 'crudly'),
-    
-    'middleware' => env('CRUDLY_MIDDLEWARE', ['web']),
-    
-    'global_filters' => [
-        'id',
-        'created_at',
-        'updated_at',
-        'deleted_at',
-    ],
-    
-    'table_filters' => [],
-    
-    'exclude_tables' => [
-        'migrations',
-        'failed_jobs',
-        'password_resets',
-        'password_reset_tokens',
-        'personal_access_tokens',
-        'sessions',
-    ],
-    
-    'pagination' => env('CRUDLY_PAGINATION', 15),
-    
-    'css_framework' => env('CRUDLY_CSS_FRAMEWORK', 'tailwind'),
-];
+// config/auty.php
+
+'prefix' => 'admin',          // URL prefix: /admin/...
+'guard'  => 'admin',          // auth guard name
+
+'throttle' => [
+    'enabled'      => true,
+    'max_attempts' => 5,
+    'lock_account' => true,
+    'lock_duration_minutes' => 30,
+],
+
+'two_factor' => [
+    'enabled' => true,
+    'enforce' => false,   // require ALL admins to use 2FA
+],
+
+'otp' => [
+    'enabled'  => true,
+    'channel'  => 'email',   // email | sms
+    'provider' => \Auty\Services\Otp\EmailOtpProvider::class,
+],
+
+'sessions' => [
+    'track'            => true,
+    'max_per_admin'    => 5,
+    'suspicious_login' => true,
+],
 ```
 
 ---
 
-## 📖 Quick Start (5 Minutes)
-
-### Step 1: Create Database Table
-
-```bash
-php artisan make:migration create_posts_table
-```
-
-Edit `database/migrations/YYYY_MM_DD_HHMMSS_create_posts_table.php`:
-
-```php
-public function up(): void
-{
-    Schema::create('posts', function (Blueprint $table) {
-        $table->id();
-        $table->string('title');
-        $table->text('content');
-        $table->string('slug')->unique();
-        $table->timestamps();
-    });
-}
-```
-
-### Step 2: Run Migration
-
-```bash
-php artisan migrate
-```
-
-### Step 3: Generate CRUD
-
-```bash
-php artisan crudly:generate Post --routes
-```
-
-### Step 4: Start Server
-
-```bash
-php artisan serve
-```
-
-### Step 5: Visit Your App
-
-Open browser: **http://localhost:8000/posts**
-
-You now have:
-- ✅ List page with table
-- ✅ Create form
-- ✅ Edit form
-- ✅ View details
-- ✅ Delete functionality
-
----
-
-## 🔨 Commands Reference
-
-### Generate Complete CRUD
-
-```bash
-php artisan crudly:generate Post --routes
-```
-
-**What it generates:**
-- Model: `app/Models/Post.php`
-- Controller: `app/Http/Controllers/PostController.php`
-- Views: `resources/views/posts/index.blade.php`, `create.blade.php`, `edit.blade.php`, `show.blade.php`
-- Routes: Added to `routes/web.php`
-
-**Options:**
-
-```bash
-# Force overwrite existing files
-php artisan crudly:generate Post --force --routes
-
-# Specify custom table name
-php artisan crudly:generate Article --table=blog_posts --routes
-
-# Generate without routes (add manually later)
-php artisan crudly:generate Post
-```
-
-### Generate Only Model
-
-```bash
-php artisan crudly:model Post
-```
-
-**Output:** `app/Models/Post.php`
-
-**With force:**
-```bash
-php artisan crudly:model Post --force
-```
-
-### Generate Only Controller
-
-```bash
-php artisan crudly:controller PostController Post
-```
-
-**Output:** `app/Http/Controllers/PostController.php`
-
-**With force:**
-```bash
-php artisan crudly:controller PostController Post --force
-```
-
----
-
-## 📁 Generated File Structure
+## 📁 Package Structure
 
 ```
-your-project/
-├── app/
+auty/
+├── src/
+│   ├── AutyServiceProvider.php           # Main service provider
+│   ├── Console/Commands/
+│   │   ├── InstallCommand.php            # php artisan auty:install
+│   │   ├── CreateAdminCommand.php        # php artisan auty:create-admin
+│   │   └── AssignRoleCommand.php         # php artisan auty:assign-role
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Auth/
+│   │   │   │   ├── LoginController.php
+│   │   │   │   ├── LogoutController.php
+│   │   │   │   ├── ForgotPasswordController.php
+│   │   │   │   ├── ResetPasswordController.php
+│   │   │   │   ├── OtpController.php
+│   │   │   │   └── TwoFactorController.php
+│   │   │   ├── DashboardController.php
+│   │   │   ├── AdminController.php
+│   │   │   ├── ProfileController.php
+│   │   │   ├── RoleController.php
+│   │   │   ├── ActivityLogController.php
+│   │   │   ├── SessionController.php
+│   │   │   └── ImpersonationController.php
+│   │   └── Middleware/
+│   │       ├── AdminAuthenticate.php     # auty.auth
+│   │       ├── AdminRole.php             # auty.role:super_admin,admin
+│   │       ├── AdminPermission.php       # auty.permission:admins.view
+│   │       ├── SuperAdmin.php            # auty.super
+│   │       ├── OtpVerified.php           # auty.otp
+│   │       └── TwoFactorVerified.php     # auty.2fa
 │   ├── Models/
-│   │   └── Post.php
-│   └── Http/Controllers/
-│       └── PostController.php
+│   │   ├── Admin.php
+│   │   ├── AdminRole.php
+│   │   ├── AdminPermission.php
+│   │   ├── AdminActivityLog.php
+│   │   ├── AdminSession.php
+│   │   └── AdminOtp.php
+│   ├── Services/
+│   │   ├── OtpService.php
+│   │   ├── TwoFactorService.php
+│   │   ├── ImpersonationService.php
+│   │   ├── SessionService.php
+│   │   ├── ActivityLogService.php
+│   │   └── Otp/EmailOtpProvider.php
+│   ├── Traits/
+│   │   ├── HasRoles.php
+│   │   ├── HasPermissions.php
+│   │   ├── HasTwoFactor.php
+│   │   ├── HasOtp.php
+│   │   └── LogsActivity.php
+│   ├── Events/
+│   │   ├── AdminLoggedIn.php
+│   │   ├── AdminLoggedOut.php
+│   │   ├── AdminFailedLogin.php
+│   │   ├── OtpRequested.php
+│   │   ├── ImpersonationStarted.php
+│   │   └── ImpersonationEnded.php
+│   ├── Listeners/
+│   │   ├── LogAdminLogin.php
+│   │   ├── LogAdminLogout.php
+│   │   ├── LogFailedLogin.php
+│   │   ├── LogImpersonation.php
+│   │   └── SendOtpNotification.php
+│   ├── Policies/
+│   │   └── AdminPolicy.php
+│   └── Contracts/
+│       └── OtpProvider.php
+├── config/auty.php
+├── database/migrations/
+│   ├── ..._create_admins_table.php
+│   ├── ..._create_admin_roles_table.php
+│   ├── ..._create_admin_activity_logs_table.php
+│   ├── ..._create_admin_sessions_table.php
+│   └── ..._create_admin_otps_table.php
 ├── resources/
-│   └── views/
-│       ├── layouts/
-│       │   └── app.blade.php
-│       └── posts/
-│           ├── index.blade.php
-│           ├── create.blade.php
-│           ├── edit.blade.php
-│           └── show.blade.php
-├── config/
-│   └── crudly.php
-├── routes/
-│   └── web.php
-└── database/
-    └── migrations/
-        └── 2026_02_16_create_posts_table.php
+│   ├── views/
+│   │   ├── layouts/{app,auth}.blade.php
+│   │   ├── auth/{login,otp,two-factor,forgot-password,reset-password}.blade.php
+│   │   ├── dashboard/index.blade.php
+│   │   ├── admins/{index,create,edit}.blade.php
+│   │   ├── roles/{index,create,edit}.blade.php
+│   │   ├── logs/index.blade.php
+│   │   ├── sessions/index.blade.php
+│   │   └── profile/index.blade.php
+│   └── lang/en/{auth,admin,role,profile,session,impersonation}.php
+└── routes/{web.php,api.php}
 ```
 
 ---
 
-## 🎨 Complete Workflow Examples
+## 🛡️ Guard Configuration
 
-### Example 1: Create Products CRUD
-
-```bash
-# Step 1: Create migration
-php artisan make:migration create_products_table
-
-# Step 2: Edit migration file
-# Add columns: id, name, price, description, timestamps
-
-# Step 3: Run migration
-php artisan migrate
-
-# Step 4: Generate CRUD
-php artisan crudly:generate Product --routes
-
-# Step 5: Start server
-php artisan serve
-
-# Step 6: Visit
-# http://localhost:8000/products
-```
-
-### Example 2: Create Categories CRUD
-
-```bash
-php artisan make:migration create_categories_table
-# Edit: id, name, slug, description, timestamps
-php artisan migrate
-php artisan crudly:generate Category --routes
-php artisan serve
-# Visit: http://localhost:8000/categories
-```
-
-### Example 3: Create Users CRUD
-
-```bash
-php artisan crudly:generate User --routes
-php artisan serve
-# Visit: http://localhost:8000/users
-```
-
-### Example 4: Multiple CRUDs
-
-```bash
-# Create all tables first
-php artisan make:migration create_posts_table
-php artisan make:migration create_categories_table
-php artisan make:migration create_tags_table
-
-# Edit all migration files with columns
-
-# Run all migrations
-php artisan migrate
-
-# Generate all CRUDs
-php artisan crudly:generate Post --routes
-php artisan crudly:generate Category --routes
-php artisan crudly:generate Tag --routes
-
-# Start server
-php artisan serve
-
-# Visit:
-# http://localhost:8000/posts
-# http://localhost:8000/categories
-# http://localhost:8000/tags
-```
-
----
-
-## 🌙 Dark Theme Layout
-
-The package generates a professional dark-themed layout.
-
-### File Location
-
-```
-resources/views/layouts/app.blade.php
-```
-
-### Features
-
-- Dark gray background (bg-gray-900)
-- Blue accent colors
-- Responsive sidebar
-- Beautiful tables
-- Smooth transitions
-- Mobile-friendly
-
-### Customize Colors
-
-Edit `resources/views/layouts/app.blade.php`:
-
-```blade
-<!-- Change sidebar gradient -->
-<div class="from-gray-900 via-gray-800 to-gray-900">
-    <!-- Change to your colors -->
-</div>
-
-<!-- Change accent color -->
-<div class="from-blue-600 to-blue-700">
-    <!-- Change to: purple, green, red, etc -->
-</div>
-```
-
----
-
-## 🔧 Customization Guide
-
-### Edit Stubs (Templates)
-
-Location:
-```
-vendor/shahrakii/crudly/resources/stubs/
-```
-
-Available stubs:
-
-```
-vendor/shahrakii/crudly/resources/stubs/
-├── model/
-│   └── model.stub
-├── controller/
-│   └── controller.stub
-└── views/
-    ├── index.stub
-    ├── create.stub
-    ├── edit.stub
-    ├── show.stub
-    ├── form-field.stub
-    └── display-field.stub
-```
-
-### Template Placeholders
-
-| Placeholder | Example | Use |
-|---|---|---|
-| `{{ MODEL }}` | Post | Model class name |
-| `{{ MODEL_LOWER }}` | post | Camel case |
-| `{{ MODEL_PLURAL }}` | Posts | Plural |
-| `{{ MODEL_PLURAL_SNAKE }}` | posts | Snake case |
-| `{{ TABLE }}` | posts | Database table |
-| `{{ FILLABLE }}` | ['title', 'content'] | Fillable array |
-| `{{ RULES }}` | [...] | Validation rules |
-| `{{ COLUMN_HEADERS }}` | <th>Title</th> | Table headers |
-| `{{ COLUMN_DATA }}` | <td>{{ data }}</td> | Table data |
-| `{{ FORM_FIELDS }}` | Input fields | Form inputs |
-| `{{ DISPLAY_FIELDS }}` | Display blocks | Show page |
-
-### Example: Customize Model Stub
-
-Edit `vendor/shahrakii/crudly/resources/stubs/model/model.stub`:
+The package automatically configures a separate `admin` guard. You can inspect/override in `config/auth.php`:
 
 ```php
-<?php
+'guards' => [
+    'admin' => [
+        'driver'   => 'session',
+        'provider' => 'admins',
+    ],
+],
 
-namespace App\Models;
+'providers' => [
+    'admins' => [
+        'driver' => 'eloquent',
+        'model'  => \Auty\Models\Admin::class,
+    ],
+],
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+'passwords' => [
+    'admins' => [
+        'provider' => 'admins',
+        'table'    => 'admin_password_reset_tokens',
+        'expire'   => 60,
+    ],
+],
+```
 
-class {{ MODEL }} extends Model
+---
+
+## 🔑 Middleware Usage
+
+All middleware are registered automatically:
+
+```php
+// Protect a route — admin must be authenticated
+Route::middleware('auty.auth')->group(...);
+
+// Role-based access
+Route::middleware('auty.role:super_admin')->group(...);
+Route::middleware('auty.role:admin,super_admin')->group(...);
+
+// Permission-based access
+Route::middleware('auty.permission:admins.view')->group(...);
+Route::middleware('auty.permission:admins.edit,admins.create')->group(...);
+
+// Super admin only
+Route::middleware('auty.super')->group(...);
+
+// Require OTP verification
+Route::middleware('auty.otp')->group(...);
+
+// Require 2FA verification
+Route::middleware('auty.2fa')->group(...);
+```
+
+---
+
+## 👥 Roles & Permissions
+
+### Assigning roles
+
+```php
+// Via code
+$admin->assignRole('admin');
+$admin->assignRole('super_admin', 'admin');   // multiple
+$admin->syncRoles(['admin']);
+$admin->removeRole('admin');
+
+// Via Artisan
+php artisan auty:assign-role admin@example.com super_admin
+```
+
+### Checking roles
+
+```php
+$admin->hasRole('super_admin');
+$admin->hasAnyRole(['admin', 'editor']);
+$admin->hasAllRoles(['admin', 'editor']);
+$admin->isSuperAdmin();   // shortcut
+```
+
+### Permissions
+
+```php
+// Give direct permission
+$admin->givePermission('admins.create');
+
+// Give to role
+$role->givePermission('admins.view');
+
+// Check
+$admin->hasPermission('admins.delete');
+$admin->hasAnyPermission(['admins.edit', 'admins.create']);
+
+// Gate integration
+Gate::allows('admins.view');
+$admin->can('admins.view');
+```
+
+---
+
+## 🔐 OTP Authentication Flow
+
+```
+1. Admin submits email/password → login succeeds
+2. If config('auty.otp.enabled') is true:
+   → OTP is generated and fired via OtpRequested event
+   → SendOtpNotification listener delivers OTP to email/SMS
+   → Admin is redirected to /admin/otp
+3. Admin enters code → verified via OtpService::verify()
+4. Session key `auty_otp_verified` is set
+5. Subsequent requests pass through OtpVerified middleware
+```
+
+### Custom OTP Provider
+
+```php
+// app/Otp/SmsOtpProvider.php
+use Auty\Contracts\OtpProvider;
+
+class SmsOtpProvider implements OtpProvider
 {
-    use HasFactory, SoftDeletes;
+    public function send(Admin $admin, AdminOtp $otp): void
+    {
+        // Send SMS via Twilio, Vonage, etc.
+        app(TwilioClient::class)->messages->create($admin->phone, [
+            'from' => config('services.twilio.from'),
+            'body' => "Your login code: {$otp->code}",
+        ]);
+    }
+}
 
-    protected $table = '{{ TABLE }}';
+// config/auty.php
+'otp' => [
+    'provider' => \App\Otp\SmsOtpProvider::class,
+    'channel'  => 'sms',
+],
+```
 
-    protected $fillable = {{ FILLABLE }};
+---
 
-    protected $dates = ['deleted_at'];
+## 🕵️ Impersonation
 
-    protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+Super admins can view the panel as any other admin:
+
+```php
+// Start impersonating
+$impersonation = app(\Auty\Services\ImpersonationService::class);
+$impersonation->impersonate($superAdmin, $targetAdmin);
+
+// Stop
+$impersonation->stopImpersonating();
+
+// Check
+$impersonation->isImpersonating();       // bool
+$impersonation->getOriginalAdmin();      // Admin|null
+```
+
+**UI**: Click "View As" on the admins list. A yellow banner appears at the top of every page while impersonating. Full activity log is recorded.
+
+---
+
+## 📊 Database Schema
+
+```sql
+-- admins
+id, name, email, password, phone, avatar,
+is_active, is_locked, locked_until,
+failed_login_count, last_login_at, last_login_ip,
+two_factor_secret, two_factor_enabled,
+email_verified_at, tenant_id (nullable),
+remember_token, deleted_at, timestamps
+
+-- admin_roles
+id, name, label, description, tenant_id, timestamps
+
+-- admin_permissions
+id, name, label, group, description, timestamps
+
+-- admin_role_permission (pivot)
+role_id, permission_id
+
+-- admin_role_assignments (pivot)
+admin_id, role_id, timestamps
+
+-- admin_direct_permissions (pivot)
+admin_id, permission_id, timestamps
+
+-- admin_activity_logs
+id, admin_id, impersonated_by, event, description,
+properties (json), ip_address, user_agent,
+url, method, created_at
+
+-- admin_sessions
+id, admin_id, session_id, ip_address, user_agent,
+device_type, device_name, browser, platform,
+location, last_activity, is_current, payload (json), timestamps
+
+-- admin_otps
+id, admin_id, code, channel, used, attempts, expires_at, timestamps
+
+-- admin_password_reset_tokens
+email, token, created_at
+```
+
+---
+
+## 📡 Events
+
+Listen to Auty events in your `EventServiceProvider` or any event listener:
+
+```php
+use Auty\Events\AdminLoggedIn;
+use Auty\Events\AdminLoggedOut;
+use Auty\Events\AdminFailedLogin;
+use Auty\Events\OtpRequested;
+use Auty\Events\ImpersonationStarted;
+use Auty\Events\ImpersonationEnded;
+
+// Example listener
+Event::listen(AdminLoggedIn::class, function (AdminLoggedIn $event) {
+    logger("Admin {$event->admin->email} logged in from {$event->ip}");
+});
+```
+
+---
+
+## 🌐 Localization
+
+Publish and edit the lang files:
+
+```bash
+php artisan vendor:publish --tag=auty-lang
+```
+
+Files appear in `lang/vendor/auty/{locale}/`. Supports any locale via:
+
+```php
+// config/auty.php
+'locale' => 'ar',  // Arabic, French, etc.
+```
+
+---
+
+## 🔒 Security Checklist
+
+Auty ships with these protections enabled by default:
+
+- [x] Separate authentication guard (no user/admin collision)
+- [x] Rate limiting per email+IP combination
+- [x] Account lock after N failed attempts (configurable)
+- [x] Soft deletes on Admin model
+- [x] Password hashed via `Hash::make()` with rehash detection
+- [x] CSRF protection on all forms
+- [x] Session regeneration after login
+- [x] Suspicious login detection (IP change)
+- [x] 2FA with TOTP (RFC 6238)
+- [x] OTP with expiry & attempt limiting (max 3 attempts per OTP)
+- [x] Impersonation restricted to `super_admin` role
+- [x] Activity logging with impersonator tracking
+- [x] IP whitelist/blacklist support
+- [x] Session invalidation on logout
+
+---
+
+## 🧪 Running Tests
+
+```bash
+cd auty
+composer install
+vendor/bin/phpunit
+```
+
+---
+
+## 🤝 Extending
+
+### Custom Admin Model
+
+```php
+// config/auty.php
+'models' => [
+    'admin' => \App\Models\MyAdmin::class,
+],
+
+// App\Models\MyAdmin
+class MyAdmin extends \Auty\Models\Admin
+{
+    protected $fillable = [
+        ...parent::getFillable(),
+        'department',
     ];
 }
 ```
 
----
-
-## 📊 Generated Code Examples
-
-### Generated Model
+### Custom OTP Provider (SMS via Vonage)
 
 ```php
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class Post extends Model
+class VonageOtpProvider implements \Auty\Contracts\OtpProvider
 {
-    use HasFactory;
-
-    protected $table = 'posts';
-
-    protected $fillable = array (
-      0 => 'title',
-      1 => 'content',
-      2 => 'slug',
-    );
-
-    protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-    ];
-}
-```
-
-### Generated Controller
-
-```php
-<?php
-
-namespace App\Http\Controllers;
-
-use App\Models\Post;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
-
-class PostController extends Controller
-{
-    public function index()
+    public function send(Admin $admin, AdminOtp $otp): void
     {
-        $posts = Post::paginate(15);
-        return view('posts.index', ['posts' => $posts]);
-    }
-
-    public function create()
-    {
-        return view('posts.create', ['columns' => $this->getColumns()]);
-    }
-
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'slug' => 'required|string|max:255',
-        ]);
-
-        Post::create($validated);
-        return redirect()->route('posts.index')
-            ->with('success', 'Post created successfully!');
-    }
-
-    public function show(Post $post)
-    {
-        return view('posts.show', [
-            'post' => $post,
-            'columns' => $this->getColumns()
-        ]);
-    }
-
-    public function edit(Post $post)
-    {
-        return view('posts.edit', [
-            'post' => $post,
-            'columns' => $this->getColumns()
-        ]);
-    }
-
-    public function update(Request $request, Post $post)
-    {
-        $validated = $request->validate([...]);
-        $post->update($validated);
-
-        return redirect()->route('posts.index')
-            ->with('success', 'Post updated successfully!');
-    }
-
-    public function destroy(Post $post)
-    {
-        $post->delete();
-        return redirect()->route('posts.index')
-            ->with('success', 'Post deleted successfully!');
+        // Vonage SMS logic
     }
 }
 ```
 
-### Generated Routes
-
-```php
-Route::resource('posts', App\Http\Controllers\PostController::class);
-```
-
-Creates these routes:
-
-| Method | Route | Controller Method |
-|---|---|---|
-| GET | `/posts` | index() |
-| GET | `/posts/create` | create() |
-| POST | `/posts` | store() |
-| GET | `/posts/{id}` | show() |
-| GET | `/posts/{id}/edit` | edit() |
-| PUT | `/posts/{id}` | update() |
-| DELETE | `/posts/{id}` | destroy() |
-
 ---
 
-## 🐛 Troubleshooting & Fixes
+## 📝 License
 
-### Routes Not Showing
-
-**Error:** 404 Not Found when visiting `/posts`
-
-**Solution:**
-
-```bash
-# Clear all caches
-php artisan cache:clear
-php artisan route:clear
-php artisan view:clear
-
-# Refresh autoload
-composer dump-autoload
-
-# Verify routes
-php artisan route:list | grep posts
-```
-
-### Views Not Found
-
-**Error:** View [posts.index] not found
-
-**Solution:**
-
-```bash
-# Check views exist
-ls resources/views/posts/
-
-# Clear view cache
-php artisan view:clear
-
-# Verify layout file
-cat resources/views/layouts/app.blade.php
-```
-
-### Model Not Found
-
-**Error:** Class 'App\Models\Post' not found
-
-**Solution:**
-
-```bash
-# Refresh autoload
-composer dump-autoload
-
-# Verify model file
-cat app/Models/Post.php
-
-# Check namespace is: namespace App\Models;
-```
-
-### Table Doesn't Exist
-
-**Error:** SQLSTATE[42S02]: Table 'posts' doesn't exist
-
-**Solution:**
-
-```bash
-# Check migrations exist
-ls database/migrations/ | grep posts
-
-# Run migrations
-php artisan migrate
-
-# Verify table
-php artisan tinker
->>> Schema::getTables();
-```
-
-### Validation Errors
-
-**Error:** Fields are not validating
-
-**Solution:**
-
-```bash
-# Check fillable in model
-cat app/Models/Post.php | grep fillable
-
-# Verify form field names match
-cat resources/views/posts/create.blade.php
-
-# Check controller validation
-cat app/Http/Controllers/PostController.php | grep validate
-```
-
-### Auth Errors
-
-**Error:** Route [login] not defined
-
-**Solution:**
-
-```bash
-# Check config/crudly.php middleware
-cat config/crudly.php | grep middleware
-
-# Change from ['web', 'auth'] to ['web']
-# Edit config/crudly.php
-```
-
-### Service Provider Not Found
-
-**Error:** Class 'Shahrakii\Crudly\CrudlyServiceProvider' not found
-
-**Solution:**
-
-```bash
-# Reinstall package
-composer remove shahrakii/crudly
-composer require shahrakii/crudly:@dev
-
-# Publish files
-php artisan vendor:publish --provider="Shahrakii\Crudly\CrudlyServiceProvider"
-
-# Clear cache
-php artisan cache:clear
-composer dump-autoload
-```
-
----
-
-## ✅ Testing Your Setup
-
-### Test 1: Verify Commands
-
-```bash
-php artisan list crudly
-```
-
-Should output 3 commands.
-
-### Test 2: Test Database Connection
-
-```bash
-php artisan tinker
->>> DB::connection()->getPdo();
-```
-
-Should return connection object.
-
-### Test 3: Test CRUD Generation
-
-```bash
-php artisan make:migration create_tests_table
-# Edit and add: id, name, timestamps
-php artisan migrate
-php artisan crudly:generate Test --routes
-php artisan serve
-# Visit: http://localhost:8000/tests
-```
-
-### Test 4: Check Generated Files
-
-```bash
-# Model should exist
-test -f app/Models/Test.php && echo "✅ Model exists"
-
-# Controller should exist
-test -f app/Http/Controllers/TestController.php && echo "✅ Controller exists"
-
-# Views should exist
-test -d resources/views/tests && echo "✅ Views exist"
-
-# Routes should be added
-grep -q "Route::resource('tests'" routes/web.php && echo "✅ Routes added"
-```
-
----
-
-## 🎯 Best Practices
-
-### 1. Always Create Migration First
-
-**✅ Correct:**
-```bash
-php artisan make:migration create_posts_table
-php artisan migrate
-php artisan crudly:generate Post --routes
-```
-
-**❌ Wrong:**
-```bash
-php artisan crudly:generate Post --routes
-# Table doesn't exist!
-```
-
-### 2. Use Descriptive Names
-
-**✅ Good:**
-```bash
-php artisan crudly:generate BlogPost --routes
-php artisan crudly:generate ProductCategory --routes
-```
-
-**❌ Bad:**
-```bash
-php artisan crudly:generate BP --routes
-php artisan crudly:generate PC --routes
-```
-
-### 3. Clear Cache After Changes
-
-```bash
-php artisan cache:clear
-php artisan route:clear
-php artisan view:clear
-composer dump-autoload
-```
-
-### 4. Test Generated Code
-
-```bash
-php artisan tinker
-
-# Test model
-Post::create(['title' => 'Test', 'content' => 'Test', 'slug' => 'test']);
-Post::all();
-
-# Test relationships
-Post::with('comments')->get();
-```
-
-### 5. Customize After Generation
-
-Don't rely only on generated code. Add:
-- Custom methods
-- Relationships
-- Scopes
-- Validation rules
-- Business logic
-
----
-
-## 🔐 Security Checklist
-
-### CSRF Protection
-
-All forms include `@csrf` automatically.
-
-### Authorization
-
-Add to controller:
-
-```php
-public function edit(Post $post)
-{
-    $this->authorize('update', $post);
-    return view('posts.edit', ['post' => $post]);
-}
-```
-
-### Input Validation
-
-Customize rules:
-
-```php
-'title' => 'required|string|max:255|unique:posts',
-'content' => 'required|string|min:10',
-'slug' => 'required|slug|unique:posts',
-```
-
-### SQL Injection Prevention
-
-Always use Eloquent:
-
-```php
-// ✅ Safe
-Post::where('title', $request->title)->get();
-
-// ❌ Unsafe
-Post::whereRaw("title = '{$request->title}'");
-```
-
----
-
-## 📚 Advanced Features
-
-### Add Relationships
-
-```php
-// In app/Models/Post.php
-public function author()
-{
-    return $this->belongsTo(User::class);
-}
-
-public function comments()
-{
-    return $this->hasMany(Comment::class);
-}
-```
-
-### Load with Relationships
-
-```php
-// In PostController
-public function index()
-{
-    $posts = Post::with('author', 'comments')
-        ->latest()
-        ->paginate(15);
-    
-    return view('posts.index', ['posts' => $posts]);
-}
-```
-
-### Add Soft Deletes
-
-Edit migration:
-
-```php
-$table->softDeletes();
-```
-
-Edit model:
-
-```php
-use Illuminate\Database\Eloquent\SoftDeletes;
-
-class Post extends Model
-{
-    use HasFactory, SoftDeletes;
-}
-```
-
-### Add Scopes
-
-```php
-// In model
-public function scopePublished($query)
-{
-    return $query->where('published', true);
-}
-
-// In controller
-$posts = Post::published()->paginate(15);
-```
-
----
-
-## 📞 Getting Help
-
-### Documentation
-
-Full docs: https://github.com/Shahrakii/Crudly
-
-### Common Issues
-
-Check issues: https://github.com/Shahrakii/Crudly/issues
-
-### Report Bugs
-
-Create issue with:
-- PHP version: `php -v`
-- Laravel version: `php artisan --version`
-- Package version: `composer show shahrakii/crudly`
-- Error message
-- Steps to reproduce
-
----
-
-## 📄 License
-
-MIT License - Use freely in personal and commercial projects.
-
----
-
-## 🙏 Credits
-
-- **Laravel 12** - Web Framework
-- **Tailwind CSS** - Styling
-- **Font Awesome** - Icons
-
----
-
-## 🎉 You're All Set!
-
-### Summary of Commands
-
-```bash
-# Install
-composer require shahrakii/crudly:@dev
-php artisan vendor:publish --provider="Shahrakii\Crudly\CrudlyServiceProvider"
-
-# Create table
-php artisan make:migration create_posts_table
-php artisan migrate
-
-# Generate CRUD
-php artisan crudly:generate Post --routes
-
-# Run server
-php artisan serve
-
-# Visit
-# http://localhost:8000/posts
-```
-
-**That's it! You now have a full working CRUD app.** 🚀
-
----
-
-**Version:** 1.0.0  
-**Last Updated:** February 2026  
-**Author:** Shahrakii
-
-**⭐ Please star the repository if this package helped you!**
+MIT © Auty Package
